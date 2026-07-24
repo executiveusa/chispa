@@ -24,9 +24,9 @@ PWA/browser
 IndexedDB local-first state
   ↓
 /api/sync on Vercel
-  ↓
-public.chispa_* RPC boundary
-  ↓
+  ↓ adds x-chispa-household-key
+public.chispa_* SECURITY INVOKER RPCs
+  ↓ RLS policies
 chispa.household_snapshots
 ```
 
@@ -65,15 +65,19 @@ chispa.household_snapshots
 
 ## RLS model
 - `chispa.household_snapshots` has RLS enabled and forced
-- direct table grants to `anon` and `authenticated` are revoked
-- browser never accesses the table directly
-- only narrowly scoped `public.chispa_load_snapshot` and `public.chispa_save_snapshot` SECURITY DEFINER RPC functions are executable by anon/authenticated
-- optimistic `revision` prevents silent stale overwrite at the RPC boundary
+- narrowly scoped table privileges are granted only so SECURITY INVOKER RPCs can operate
+- RLS policies require the row `household_key` to exactly equal the `x-chispa-household-key` request header
+- `/api/sync` adds that header after validating the derived household key format
+- `public.chispa_load_snapshot` and `public.chispa_save_snapshot` run as SECURITY INVOKER, so RLS remains authoritative
+- RPC argument/header mismatch is explicitly rejected
+- optimistic `revision` prevents silent stale overwrite
 
 Required tests:
-- [x] database save through Chispa RPC works
-- [x] database load through Chispa RPC works
-- [x] test row removed after verification
+- [x] RLS-protected save as `anon` works for matching household key/header
+- [x] RLS-protected load as `anon` works for matching household key/header
+- [x] mismatched household key/header is denied
+- [x] production `/api/sync-health` reports `database=connected` and `isolation=rls+rpc`
+- [x] no Chispa SECURITY DEFINER advisor warning remains after hardening
 - [ ] two real devices using same household code verified by owner
 - [ ] cross-device simultaneous-edit conflict UX verified manually
 
