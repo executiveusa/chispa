@@ -9,6 +9,7 @@
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/extras.css" />
+  <link rel="stylesheet" href="/cloud-sync.css" />
   <title>Chispa — Planea. Compara. Consíguelo.</title>
 </head>
 <body>
@@ -17,6 +18,7 @@
   <script type="module">
     try { await import('/migration.js'); } catch (error) { console.warn('Chispa migration skipped', error); }
     await import('/app.js');
+    await import('/cloud-sync.js');
   </script>
 </body>
 </html>

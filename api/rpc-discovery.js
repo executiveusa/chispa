@@ -1,4 +1,0 @@
-const BASE='https://api.thepaulieffect.com/supabase/rest/v1/';
-const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzcyNzc2NjczLCJleHAiOjE5MzA0NTY2NzN9.rl1mc-GgpG6nQArbEfFAKOcMvzL7rrgzPFT-LlCiCy4';
-async function get(profile){const r=await fetch(BASE,{headers:{apikey:ANON,Authorization:`Bearer ${ANON}`,'Accept-Profile':profile,Accept:'application/openapi+json'}});const d=await r.json();return Object.keys(d.paths||{}).filter(p=>p.startsWith('/rpc/')).sort()}
-module.exports=async function(req,res){res.setHeader('Cache-Control','no-store');try{res.status(200).json({work:await get('work'),studio:await get('studio')})}catch(e){res.status(500).json({ok:false,error:String(e?.message||e)})}};
