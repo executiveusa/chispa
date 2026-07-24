@@ -18,6 +18,7 @@ jobs:
           node --check cloud-sync.js
           node --check sw.js
           node --check api/sync.js
+          node --check api/sync-health.js
       - name: Check required PWA and sync files
         run: |
           test -s index.html
@@ -27,8 +28,9 @@ jobs:
           test -s manifest.webmanifest
           test -s icon.svg
           test -s supabase/migrations/001_chispa_project.sql
+          test -s supabase/migrations/002_managed_supabase_snapshot.sql
           python -m json.tool manifest.webmanifest >/dev/null
       - name: Guard against committed privileged secrets
         run: |
-          ! grep -R --exclude-dir=.git -E 'SUPABASE_SERVICE_ROLE_KEY[[:space:]]*=[[:space:]]*['\"'\''][^$]' .
+          ! grep -R --exclude-dir=.git -E 'SUPABASE_SERVICE_ROLE_KEY[[:space:]]*=[[:space:]]*['"'\''][^$]' .
           ! grep -R --exclude-dir=.git -E 'postgres(ql)?://[^[:space:]]+:[^[:space:]]+@' .
