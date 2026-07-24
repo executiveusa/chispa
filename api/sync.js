@@ -2,18 +2,19 @@ const RPC = 'https://cyxdevcjycmffhmwxojh.supabase.co/rest/v1/rpc/';
 const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5eGRldmNqeWNtZmZobXd4b2poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5ODM5ODUsImV4cCI6MjA5NzU1OTk4NX0.X3W-woCp-nVcnHXIG-d8wnpT_BGLdp6p1tjZ1jezdmI';
 const MAX_BYTES = 900_000;
 
-const headers = () => ({
+const headers = householdId => ({
   'Content-Type': 'application/json',
   apikey: ANON,
   Authorization: `Bearer ${ANON}`,
+  'x-chispa-household-key': householdId,
 });
 
 const validHouseholdId = value => /^chispa-[a-f0-9]{64}$/.test(String(value || ''));
 
-async function rpc(name, body) {
+async function rpc(name, body, householdId) {
   const response = await fetch(`${RPC}${name}`, {
     method: 'POST',
-    headers: headers(),
+    headers: headers(householdId),
     body: JSON.stringify(body),
   });
   const text = await response.text();
@@ -42,7 +43,7 @@ module.exports = async function handler(req, res) {
 
   try {
     if (action === 'load') {
-      const data = await rpc('chispa_load_snapshot', { p_household_key: householdId });
+      const data = await rpc('chispa_load_snapshot', { p_household_key: householdId }, householdId);
       const row = Array.isArray(data) ? data[0] : data;
       if (!row?.payload || row.payload.app !== 'chispa') {
         return res.status(200).json({ ok: true, exists: false, revision: 0 });
@@ -70,7 +71,7 @@ module.exports = async function handler(req, res) {
         p_household_key: householdId,
         p_payload: payload,
         p_expected_revision: Number.isFinite(Number(expectedRevision)) ? Number(expectedRevision) : null,
-      });
+      }, householdId);
       const row = Array.isArray(data) ? data[0] : data;
       return res.status(200).json({
         ok: true,
