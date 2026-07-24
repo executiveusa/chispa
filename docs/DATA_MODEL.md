@@ -20,10 +20,31 @@ Columns:
 
 Security:
 - RLS enabled and forced
-- no direct `anon` or `authenticated` table grants
-- access only through `public.chispa_load_snapshot` and `public.chispa_save_snapshot`
+- household-key RLS derived from `x-chispa-household-key`
+- access through `public.chispa_load_snapshot` and `public.chispa_save_snapshot`
 
-## Application state inside payload
+### `chispa.files`
+
+Purpose: small private product photos, receipts and warranties for the initial V1 without requiring privileged Storage credentials.
+
+Columns:
+- `id uuid primary key`
+- `household_key text not null`
+- `item_id text not null`
+- `kind text` constrained to `photo|receipt|warranty`
+- `file_name text`
+- `mime_type text` constrained to JPEG/PNG/WebP/PDF
+- `size_bytes integer` capped at 2,000,000
+- `data bytea`
+- `created_at timestamptz`
+
+Security:
+- RLS enabled and forced
+- same household-key RLS boundary as snapshots
+- SECURITY INVOKER save/load/delete RPCs
+- no cross-app table dependency
+
+## Application state inside snapshot payload
 
 The current state contains:
 - lists
@@ -41,7 +62,9 @@ Items distinguish:
 - estimate source amount/currency
 - saved offers and landed-cost fields
 - purchase fields
-- photo/receipt/warranty/serial/return references
+- notes
+- photo/receipt/warranty references pointing either to an external URL or `/api/files?...`
+- serial and return-deadline fields
 
 ## Future normalized model
 
@@ -58,6 +81,8 @@ When Chispa outgrows snapshot persistence, migrate within the same `chispa` name
 
 Do not normalize prematurely unless real usage requires multi-row realtime, richer audit history, or larger payloads.
 
+Private files may remain in `chispa.files` for small/self-hosted use or later move to an isolated authenticated object-storage bucket.
+
 ## Cross-app boundary
 
-Chispa owns only `chispa.*`, its `platform.app_registry` row, and future `chispa-*` storage namespaces. It must not depend on Botanical or other app transactional tables.
+Chispa owns only `chispa.*`, its `platform.app_registry` row, its RPC prefix, and reserved `chispa-private` storage namespace. It must not depend on Botanical or other app transactional tables or buckets.
