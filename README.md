@@ -1,6 +1,6 @@
 # Chispa
 
-Chispa is a bilingual (Spanish/English), mobile-first shopping-list PWA for everyday lists, projects, travel, supplier navigation, saved-offer comparison, budgets, spending, shared household memory, and offline use.
+Chispa is a bilingual (Spanish/English), mobile-first shopping-list PWA for everyday lists, projects, travel, supplier navigation, saved-offer comparison, budgets, spending, shared household memory, private receipts/documents, and offline use.
 
 ## Product model
 
@@ -10,6 +10,7 @@ Chispa is a bilingual (Spanish/English), mobile-first shopping-list PWA for ever
 - **Prices:** Stored in original currency. MXN/USD is derived from one exchange rate. Saved offers compare landed cost: item + shipping + tax + import - discount.
 - **Offline:** IndexedDB autosave + service-worker cache.
 - **Cloud sharing:** household-code sync through Vercel `/api/sync` into the isolated `chispa` schema on managed Supabase. Optimistic revisions prevent silent stale overwrites.
+- **Private documents:** product photos, receipts and warranties can be uploaded from item details. Large phone photos are compressed automatically; files are capped at 2 MB and stored in the isolated `chispa.files` table behind household RLS.
 - **Sharing/export:** read-only links, WhatsApp summaries, JSON/CSV backup and print/PDF.
 
 ## Database isolation
@@ -20,7 +21,7 @@ Chispa shares one Supabase project with other micro-apps but does not share appl
 - Project ref: `cyxdevcjycmffhmwxojh`
 - Chispa schema: `chispa`
 - Registry: `platform.app_registry`
-- RLS: enabled and forced on `chispa.household_snapshots`
+- RLS: enabled and forced on Chispa household snapshots and private files
 - Cloud access: `public.chispa_*` SECURITY INVOKER RPCs plus household-key RLS policies
 - Cross-app access: denied by design
 
@@ -32,7 +33,9 @@ Vercel project: `chispa` / `prj_hbXYXBFBzyOwJMpcnTTDb0ZCpCXc`
 
 Primary production domain: `https://chispa-nu.vercel.app/`
 
-Cloud health endpoint: `/api/sync-health`
+Health endpoints:
+- `/api/sync-health`
+- `/api/files-health`
 
 ## Portability
 
@@ -48,9 +51,8 @@ Operational and migration contracts live in:
 
 Chispa is intentionally kept exportable to self-hosted Postgres/Supabase later.
 
-## Remaining non-core upgrades
+## Remaining scale/polish upgrades
 
 1. Approved binary hero image at `/chispa-hero.webp`; the app uses a neutral fallback until the approved asset is available to the repository writer.
-2. Real binary receipt/photo/warranty uploads in the reserved `chispa-private` storage namespace.
-3. Supabase Auth + explicit household-membership rows before broader multi-household or sensitive-data use.
-4. Formal retailer/API integrations for automated live price retrieval; current V1 uses outbound search plus saved verified offers rather than fabricated prices.
+2. Supabase Auth + explicit household-membership rows before broader multi-household or sensitive-data use.
+3. Formal retailer/API integrations for automated live price retrieval; current V1 uses outbound search plus saved verified offers rather than fabricated prices.
