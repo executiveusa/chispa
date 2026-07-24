@@ -15,11 +15,20 @@ jobs:
         run: |
           node --check app.js
           node --check migration.js
+          node --check cloud-sync.js
           node --check sw.js
-      - name: Check required PWA files
+          node --check api/sync.js
+      - name: Check required PWA and sync files
         run: |
           test -s index.html
           test -s styles.css
+          test -s extras.css
+          test -s cloud-sync.css
           test -s manifest.webmanifest
           test -s icon.svg
+          test -s supabase/migrations/001_chispa_project.sql
           python -m json.tool manifest.webmanifest >/dev/null
+      - name: Guard against committed privileged secrets
+        run: |
+          ! grep -R --exclude-dir=.git -E 'SUPABASE_SERVICE_ROLE_KEY[[:space:]]*=[[:space:]]*['\"'\''][^$]' .
+          ! grep -R --exclude-dir=.git -E 'postgres(ql)?://[^[:space:]]+:[^[:space:]]+@' .
