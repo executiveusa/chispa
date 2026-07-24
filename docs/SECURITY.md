@@ -18,13 +18,16 @@ Primary risks:
 
 ### Table access
 - `chispa.household_snapshots` has RLS enabled and forced
-- direct grants to `anon` and `authenticated` are revoked
-- browser code does not connect to the private table
+- `anon`/`authenticated` table privileges are limited to the operations required by the invoker RPCs
+- RLS policies only permit rows whose `household_key` exactly matches the `x-chispa-household-key` request header
+- the browser never queries the table directly; the Vercel sync boundary adds the household header
 
 ### RPC boundary
 Only these public RPCs are exposed for Chispa sync:
 - `public.chispa_load_snapshot(text)`
 - `public.chispa_save_snapshot(text,jsonb,bigint)`
+
+Both functions run as `SECURITY INVOKER`, so Postgres RLS remains authoritative. They also reject a mismatch between the RPC argument and request household header.
 
 The household key must match `chispa-<64 lowercase hex>`.
 
@@ -50,9 +53,11 @@ Never expose:
 ## Required verification
 
 Completed:
-- RPC save smoke test
-- RPC load smoke test
+- initial RPC save smoke test
+- initial RPC load smoke test
 - test data cleanup
+- production `/api/sync-health` returns `database=connected` and `isolation=rls+rpc`
+- post-hardening Supabase advisor no longer flags Chispa RPCs as anonymous SECURITY DEFINER functions
 
 Manual acceptance still required:
 - two real devices join same household
@@ -63,3 +68,7 @@ Manual acceptance still required:
 ## Storage
 
 No private binary upload is enabled yet. Future files must use the reserved `chispa-private` namespace with tenant-aware storage policies. Do not reuse `botanical-images`.
+
+## Unrelated project warnings
+
+The shared Supabase project's remaining advisor warnings currently relate to pre-existing Botanical infrastructure (including the `botanical-images` bucket and `decrement_image_remaining`) plus an informational deny-all RLS notice on `platform.app_registry`. They are not Chispa data paths and should be remediated in the owning app without weakening Chispa isolation.
