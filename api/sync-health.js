@@ -11,6 +11,7 @@ module.exports = async function handler(req, res) {
         'Content-Type': 'application/json',
         apikey: ANON,
         Authorization: `Bearer ${ANON}`,
+        'x-chispa-household-key': TEST_KEY,
       },
       body: JSON.stringify({ p_household_key: TEST_KEY }),
     });
@@ -18,7 +19,7 @@ module.exports = async function handler(req, res) {
       const detail = await response.text();
       return res.status(502).json({ ok: false, database: 'unreachable', status: response.status, detail: detail.slice(0, 160) });
     }
-    return res.status(200).json({ ok: true, database: 'connected', provider: 'supabase', schema: 'chispa', isolation: 'rpc-only' });
+    return res.status(200).json({ ok: true, database: 'connected', provider: 'supabase', schema: 'chispa', isolation: 'rls+rpc' });
   } catch (error) {
     return res.status(500).json({ ok: false, database: 'unreachable', error: error instanceof Error ? error.message : String(error) });
   }
