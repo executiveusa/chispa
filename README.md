@@ -20,8 +20,9 @@ Chispa shares one Supabase project with other micro-apps but does not share appl
 - Project ref: `cyxdevcjycmffhmwxojh`
 - Chispa schema: `chispa`
 - Registry: `platform.app_registry`
-- Direct table access for `anon`/`authenticated`: revoked
-- Cloud access: narrowly scoped `public.chispa_*` RPCs only
+- RLS: enabled and forced on `chispa.household_snapshots`
+- Cloud access: `public.chispa_*` SECURITY INVOKER RPCs plus household-key RLS policies
+- Cross-app access: denied by design
 
 The database was approximately 11 MB at the 2026-07-24 capacity check, so the shared-project risk for this V1 is low.
 
