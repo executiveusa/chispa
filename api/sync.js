@@ -1,5 +1,5 @@
 const RPC = 'https://cyxdevcjycmffhmwxojh.supabase.co/rest/v1/rpc/';
-const ANON = 'sb_publishable_PoqI-3PsCqewtJWJ0Z73Ag_5hIE0oKI';
+const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5eGRldmNqeWNtZmZobXd4b2poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5ODM5ODUsImV4cCI6MjA5NzU1OTk4NX0.X3W-woCp-nVcnHXIG-d8wnpT_BGLdp6p1tjZ1jezdmI';
 const MAX_BYTES = 900_000;
 
 const headers = () => ({
