@@ -1,0 +1,1 @@
+Temporary QA trigger for Chispa Phase 1 household sync validation. Do not merge.
