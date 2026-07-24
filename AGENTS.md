@@ -3,7 +3,7 @@
 ## App identity
 - App: Chispa
 - Slug: `chispa`
-- Purpose: bilingual household shopping, project lists, price comparison, purchase memory, offline-first shared planning
+- Purpose: bilingual household shopping, project lists, price comparison, purchase memory, private receipts/documents, offline-first shared planning
 - Owner: The Pauli Effect
 - Intended users: initial two-person household; architecture remains household-ready
 
@@ -20,14 +20,19 @@
 ## Architecture
 ```text
 PWA/browser
-  ↓
-IndexedDB local-first state
-  ↓
-/api/sync on Vercel
-  ↓ adds x-chispa-household-key
-public.chispa_* SECURITY INVOKER RPCs
-  ↓ RLS policies
-chispa.household_snapshots
+  ├─ IndexedDB local-first state
+  │      ↓
+  │   /api/sync on Vercel
+  │      ↓ x-chispa-household-key
+  │   public.chispa_* snapshot RPCs
+  │      ↓ RLS
+  │   chispa.household_snapshots
+  │
+  └─ Item photo/receipt/warranty upload
+         ↓ /api/files
+      public.chispa_* file RPCs
+         ↓ RLS
+      chispa.files
 ```
 
 ## Database
@@ -57,37 +62,43 @@ chispa.household_snapshots
 - Model: household
 - Current V1 cloud key: high-entropy household code is normalized and SHA-256 hashed client-side; only the `chispa-<64 hex>` derived key reaches the backend
 - Cloud persistence is one snapshot per household for V1
+- Private files carry the same derived `household_key`
 
 ## Authentication
 - Current V1: local-first household-code sharing
-- Planned hardening: Supabase Auth magic-link/OTP plus household membership rows before sensitive/multi-household scale
+- Planned scale hardening: Supabase Auth magic-link/OTP plus household membership rows before sensitive or broader multi-household use
 - The household code is a bearer-style shared secret for this initial household V1; do not reuse this pattern for sensitive multi-tenant apps
 
 ## RLS model
-- `chispa.household_snapshots` has RLS enabled and forced
-- narrowly scoped table privileges are granted only so SECURITY INVOKER RPCs can operate
-- RLS policies require the row `household_key` to exactly equal the `x-chispa-household-key` request header
-- `/api/sync` adds that header after validating the derived household key format
-- `public.chispa_load_snapshot` and `public.chispa_save_snapshot` run as SECURITY INVOKER, so RLS remains authoritative
+- `chispa.household_snapshots` and `chispa.files` have RLS enabled and forced
+- narrowly scoped table privileges exist only so SECURITY INVOKER RPCs can operate
+- RLS requires row `household_key` to exactly equal the validated `x-chispa-household-key` request header
+- `/api/sync` and `/api/files` add that header after validating the derived household-key format
+- Chispa RPCs run as SECURITY INVOKER, so RLS remains authoritative
 - RPC argument/header mismatch is explicitly rejected
-- optimistic `revision` prevents silent stale overwrite
+- snapshot `revision` prevents silent stale overwrites
 
 Required tests:
-- [x] RLS-protected save as `anon` works for matching household key/header
-- [x] RLS-protected load as `anon` works for matching household key/header
+- [x] RLS-protected snapshot save/load works for matching household key/header
 - [x] mismatched household key/header is denied
 - [x] production `/api/sync-health` reports `database=connected` and `isolation=rls+rpc`
-- [x] no Chispa SECURITY DEFINER advisor warning remains after hardening
-- [ ] two real devices using same household code verified by owner
-- [ ] cross-device simultaneous-edit conflict UX verified manually
+- [x] private file save/load/delete completed end-to-end through the RLS RPC path
+- [x] production `/api/files-health` reports the private file backend connected
+- [x] no Chispa anonymous SECURITY DEFINER advisor warning remains after hardening
+- [ ] two physical devices using the same household code verified by owner
+- [ ] simultaneous real-device conflict UX verified manually
 
 ## Storage
-- Current V1 attachments are URL/reference metadata only
-- Reserved future namespace: `chispa-private`
+- V1 product photos, receipts, and warranties are stored in `chispa.files` as private Postgres binary data behind household RLS
+- Maximum persisted file size: 2 MB
+- Large phone images are compressed client-side before upload
+- Replacing or removing a Chispa-managed file deletes the old binary record to limit orphan growth
+- Reserved bucket `chispa-private` exists but is not used by V1; its temporary anonymous policies were removed after Storage did not expose the custom household header to the policy context
 - Do not use `botanical-images` or any other app bucket
+- When Supabase Auth is added, migrating binaries from `chispa.files` into `chispa-private` is optional and should preserve the same app/tenant isolation contract
 
 ## Environment variable names
-Current sync uses the Supabase project URL and public anon credential only. No privileged database secret is required by the V1 sync endpoint.
+Current sync/file APIs use the Supabase project URL and public anon credential only. No service-role or database password is required for V1 application traffic.
 
 Future server-only variables may include:
 ```text
@@ -106,19 +117,22 @@ Never place privileged values in frontend code or documentation.
 
 ## Backup
 - Local: IndexedDB plus JSON/CSV export
-- Cloud: managed Supabase household snapshot
+- Cloud state: `chispa.household_snapshots`
+- Private documents: `chispa.files`
 - Before cloud adoption, Chispa stores a `pre-cloud-*` IndexedDB backup
 
 ## Restore
 - Local JSON import restores application state
 - Cloud household join loads the shared snapshot after first backing up local state
+- File references in the snapshot resolve through `/api/files` to `chispa.files`
 - Self-host migration uses `docs/MIGRATION.md` and `MIGRATION_HANDOFF.md`
 
 ## Capacity status
 Last checked: 2026-07-24
-- Database size: ~11 MB
+- Database size: ~11 MB before normal Chispa usage
 - Project health: active/healthy
 - Risk: LOW for Chispa V1
+- Binary files consume database quota, so capacity checks must include `chispa.files`
 - Migration planning threshold: roughly 70–80% practical shared capacity or earlier for performance/security/business reasons
 
 ## Migration trigger status
@@ -141,8 +155,8 @@ When triggered:
 1. Create or refresh `MIGRATION_HANDOFF.md`.
 2. Read this file fully.
 3. Read `docs/MIGRATION.md`.
-4. Check current Supabase capacity.
-5. Inventory only the `chispa` schema, Chispa RPCs, registry row, storage namespace, and deployment config.
+4. Check current Supabase capacity, including `chispa.files` size.
+5. Inventory only the `chispa` schema, Chispa RPCs, registry row, reserved storage namespace, and deployment config.
 6. Ask the Migration Placement Questions.
 7. Access local secrets only from `E:\THE PAULI FILES\Cosmos_Vault.env` when that path is actually accessible from the execution environment.
 8. Never print, echo, commit, log, screenshot, or expose secret values.
@@ -150,9 +164,9 @@ When triggered:
 10. Inventory existing Supabase/Postgres targets.
 11. Ask target DB/schema if ambiguous.
 12. Backup source and target.
-13. Export only Chispa-owned database objects/data/storage.
+13. Export only Chispa-owned database objects/data/files.
 14. Import and recreate RLS/grants/functions/triggers/indexes/storage/jobs.
-15. Verify counts, files, conflict behavior, cross-app denial, and production health.
+15. Verify snapshot counts, file counts, conflict behavior, cross-app denial, and production health.
 16. Update environment variables and deploy.
 17. Keep managed Supabase as rollback until owner acceptance.
 18. Update this file and `MIGRATION_HANDOFF.md`.
@@ -163,6 +177,6 @@ When triggered:
 3. Dedicated database or isolated schema?
 4. Production domain/subdomain?
 5. Migrate auth users?
-6. Move storage now?
+6. Move file storage now or keep binary files in Postgres initially?
 7. Zero/near-zero downtime or short maintenance window?
 8. How long keep managed Supabase as rollback?
