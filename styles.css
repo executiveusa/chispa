@@ -160,6 +160,18 @@ body {
   padding: 24px 20px 80px;
 }
 
+/* Hero Banner */
+.hero-banner {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: var(--radius-l);
+  margin-bottom: 20px;
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-subtle);
+  display: block;
+}
+
 /* Typography & Headers */
 .page-header {
   margin-bottom: 24px;

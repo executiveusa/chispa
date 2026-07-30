@@ -270,6 +270,8 @@ function renderHomeView() {
   const purchasedCount = p.items.filter(i => i.status === 'purchased').length;
   
   return `
+    <img src="./hero-chispa.jpg" alt="Chispa Operaciones Familiares" class="hero-banner">
+
     <div class="page-header">
       <h1 class="page-title">Operaciones Familiares</h1>
       <p class="page-subtitle">Ciudad de México | Resumen de proyectos y compras activas</p>
