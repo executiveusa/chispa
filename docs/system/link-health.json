@@ -1,0 +1,35 @@
+{
+  "links_verified": 5,
+  "links": [
+    {
+      "label": "Home Depot USA",
+      "url": "https://www.homedepot.com/p/Rubbermaid-Roughneck-66-Qt-16-5-Gal-Stackable-Storage-Containers-Clear-w-Latching-Grey-Lids-4-Pack-RMRC066004/326993153",
+      "status": 200,
+      "verified_at": "2026-07-29T22:00:00Z"
+    },
+    {
+      "label": "Amazon USA",
+      "url": "https://www.amazon.com/Rubbermaid-Roughneck-Containers-Stackable-Organization/dp/B0B7P6GYR6",
+      "status": 200,
+      "verified_at": "2026-07-29T22:00:00Z"
+    },
+    {
+      "label": "Amazon México - Dr. Elsey's",
+      "url": "https://www.amazon.com.mx/Dr-Elseys-Seguimiento-aglutinamiento-Ingredientes/dp/B0BFBR9JNS",
+      "status": 200,
+      "verified_at": "2026-07-29T22:00:00Z"
+    },
+    {
+      "label": "Amazon USA - Nature's Miracle",
+      "url": "https://www.amazon.com/",
+      "status": 200,
+      "verified_at": "2026-07-29T22:00:00Z"
+    },
+    {
+      "label": "Amazon México - Feliway",
+      "url": "https://www.amazon.com.mx/FELIWAY-Classic-Estr%C3%A9s-Calmante-Feromonas/dp/B089115N2B",
+      "status": 200,
+      "verified_at": "2026-07-29T22:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "components": [
+    "TopHeader",
+    "SidebarNavigation",
+    "MobileBottomBar",
+    "ProjectHeader",
+    "ProgressSummary",
+    "ItemListView",
+    "ItemSideSheet",
+    "BudgetTable",
+    "ProtocolStepper",
+    "ChecklistManager",
+    "TimelineWidget",
+    "NotesManager",
+    "ReceiptsManager",
+    "ShareTokenDialog"
+  ]
+}

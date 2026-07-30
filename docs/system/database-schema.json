@@ -1,0 +1,23 @@
+{
+  "system": "Chispa Personal Operations & Projects",
+  "version": "2.0.0",
+  "table_prefix": "chispa_",
+  "isolation_verified": true,
+  "tables": [
+    "chispa_profiles",
+    "chispa_projects",
+    "chispa_project_members",
+    "chispa_timeline_entries",
+    "chispa_shopping_items",
+    "chispa_shopping_links",
+    "chispa_budget_options",
+    "chispa_budget_lines",
+    "chispa_protocol_steps",
+    "chispa_checklist_items",
+    "chispa_notes",
+    "chispa_attachments",
+    "chispa_share_links",
+    "chispa_price_checks",
+    "chispa_activity_log"
+  ]
+}

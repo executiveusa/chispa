@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "locked_at": "2026-07-29T22:00:00Z",
+  "references": [
+    {
+      "name": "chispa",
+      "repo": "https://github.com/executiveusa/chispa",
+      "commit": "411f6649b944d5d6a88328b80f9e425b2c1d642a",
+      "role": "primary_app"
+    },
+    {
+      "name": "jcodemunch-mcp",
+      "repo": "https://github.com/jgravelle/jcodemunch-mcp",
+      "role": "code_indexing"
+    },
+    {
+      "name": "pauli-Uncodixfy",
+      "repo": "https://github.com/executiveusa/pauli-Uncodixfy",
+      "role": "anti_template_rules"
+    },
+    {
+      "name": "pauli-taste-skill",
+      "repo": "https://github.com/executiveusa/pauli-taste-skill",
+      "role": "design_craft_review"
+    },
+    {
+      "name": "opensrc",
+      "repo": "https://github.com/vercel-labs/opensrc",
+      "role": "dependency_inspection"
+    },
+    {
+      "name": "graphify",
+      "repo": "https://github.com/safishamsi/graphify",
+      "role": "knowledge_graph"
+    }
+  ]
+}

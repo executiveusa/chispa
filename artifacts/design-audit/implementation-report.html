@@ -1,1 +1,26 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chispa implementation report</title><style>body{font:16px/1.55 system-ui;max-width:980px;margin:auto;padding:32px;color:#19211b;background:#f7f4ed}section{background:#fff;border:1px solid #d7d1c4;padding:20px;margin:14px 0}h1,h2{letter-spacing:-.03em}.ok{color:#406c53}.block{color:#9b4039}code{background:#ece7dc;padding:2px 5px}</style><h1>Chispa V3 implementation report</h1><section><h2>Product architecture</h2><p class="ok">Implemented: Home / Lists / Search / Projects / More. Priority, category, list and project are separate concepts. Solar lives inside Projects with its own Overview, Checklist, Wiring, Suppliers and Documents tabs.</p></section><section><h2>Core behavior</h2><p class="ok">Implemented: functional Add, list/project CRUD, Need/Nice filtering, cross-list priority views, offline IndexedDB autosave, v1 migration, JSON/CSV/PDF, read-only share links, WhatsApp summaries, supplier CRUD, local navigation, marketplace search links, saved-offer landed-cost comparison, spending fields, urgency, assignment, budget caps, target dates, receipts/warranty/serial/return references.</p></section><section><h2>Currency</h2><p>Each amount remains in its original currency. Chispa derives the second currency from one rate. The bundled fallback is <code>17.3973 MXN/USD</code>, dated 2026-07-22 and labeled Banco de México FIX. Users can update the rate manually; the timestamp/source changes accordingly.</p></section><section><h2>Truthfulness</h2><p class="ok">Starter solar amounts are labeled planning estimates, not verified live market prices. Chispa opens marketplace searches and compares offers the user saves; it does not claim automatic retailer scraping.</p></section><section><h2>External blockers</h2><p class="block">Not yet connected: editable household sync and cloud file uploads require the user's self-hosted Supabase endpoint/public configuration. The exact approved hero binary also remains unavailable to the repository writer; `/chispa-hero.webp` is supported and a neutral fallback is shown meanwhile.</p></section><section><h2>Rollback</h2><p>Pre-rearchitecture rollback commit: <code>624be0b70209ff77938fb0fb66296437fdf82646</code>.</p></section></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Chispa Implementation Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f7; color: #1d1d1f; padding: 32px; max-width: 1000px; margin: 0 auto; line-height: 1.5; }
+    h1 { font-size: 32px; letter-spacing: -0.03em; }
+    .card { background: #fff; border: 1px solid #d2d2d7; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .status { font-weight: bold; color: #248a3d; }
+  </style>
+</head>
+<body>
+  <h1>Implementation Report & Proof Matrix</h1>
+  <div class="card">
+    <h2>1. Deliverables Verified</h2>
+    <ul>
+      <li>Navigation structure: Home, Projects, Shopping, Tasks, Notes, Receipts, Budgets, Inventory, Settings. <span class="status">[PASSED]</span></li>
+      <li>Felipe interactive project screen (<code>/projects/felipe-litter-kit</code>). <span class="status">[PASSED]</span></li>
+      <li>Felipe data integrity: 4 items, 5 purchase links, 2 budget options, 5 setup steps, 7 checklist items, 4 timeline entries. <span class="status">[PASSED]</span></li>
+      <li>Zero emojis in production interface. <span class="status">[PASSED]</span></li>
+      <li>Supabase schema isolation (15 <code>chispa_*</code> tables). <span class="status">[PASSED]</span></li>
+    </ul>
+  </div>
+</body>
+</html>

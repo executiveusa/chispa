@@ -1,23 +1,65 @@
-const DB='chispa-db',STORE='state',CODE_KEY='chispa-household-code-v1',INSTANCE_KEY='chispa-device-instance-v1',LAST_REMOTE='chispa-last-remote-v1',LAST_PUSH='chispa-last-push-v1',REV_KEY='chispa-cloud-revision-v1';
-let syncStatus='local',syncMessage='',busy=false,timer=null;
-const labels={local:['Solo local','Local only'],syncing:['Sincronizando…','Syncing…'],synced:['Sincronizado','Synced'],offline:['Sin conexión · guardado local','Offline · saved locally'],conflict:['Conflicto · revisar','Conflict · review'],pending:['Nube pendiente','Cloud setup pending'],error:['Error de sincronización','Sync error']};
-function lang(){return document.documentElement.lang?.startsWith('en')?'en':(document.querySelector('#lang')?.textContent==='ES'?'en':'es')}function tr(pair){return pair[lang()==='es'?0:1]}
-function openDb(){return new Promise((ok,no)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE)};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}
-async function getLocal(key='app'){try{const d=await openDb();return await new Promise(ok=>{const r=d.transaction(STORE,'readonly').objectStore(STORE).get(key);r.onsuccess=()=>ok(r.result);r.onerror=()=>ok(null)})}catch{return null}}
-async function putLocal(value,key='app'){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE,'readwrite');tx.objectStore(STORE).put(value,key);tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
-function instanceId(){let x=localStorage.getItem(INSTANCE_KEY);if(!x){x=crypto.randomUUID();localStorage.setItem(INSTANCE_KEY,x)}return x}
-async function householdId(code){const bytes=new TextEncoder().encode(`chispa:v1:${code.trim().toLowerCase()}`),hash=await crypto.subtle.digest('SHA-256',bytes);return'chispa-'+[...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('')}
-async function api(action,householdId,payload,expectedRevision){const r=await fetch(`/api/sync?action=${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({householdId,payload,expectedRevision})});const d=await r.json().catch(()=>({ok:false,error:'invalid_response'}));if(!r.ok){const e=new Error(d.error||'cloud_error');e.code=d.error;e.status=r.status;throw e}return d}
-function setStatus(status,message=''){syncStatus=status;syncMessage=message;decorate()}
-function generateCode(){const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',b=new Uint8Array(20);crypto.getRandomValues(b);return[...b].map(x=>a[x%a.length]).join('').match(/.{1,5}/g).join('-')}
-function localStamp(s){return Date.parse(s?.meta?.updatedAt||0)||0}function remoteStamp(p){return Date.parse(p?.cloudUpdatedAt||p?.state?.meta?.updatedAt||0)||0}
-function revision(){return Number(localStorage.getItem(REV_KEY)||0)}function setRevision(v){localStorage.setItem(REV_KEY,String(Number(v||0)))}
-async function backupLocal(state){if(!state)return;await putLocal(state,`pre-cloud-${new Date().toISOString()}`)}
-async function saveRemote(hid,state){const now=new Date().toISOString();const payload={app:'chispa',schema:1,cloudUpdatedAt:now,sourceDevice:instanceId(),state};const result=await api('save',hid,payload,revision());setRevision(result.revision);localStorage.setItem(LAST_REMOTE,result.savedAt||now);localStorage.setItem(LAST_PUSH,state?.meta?.updatedAt||now);setStatus('synced',result.savedAt||now)}
-async function adoptRemote(payload,remoteRevision=0){const local=await getLocal();await backupLocal(local);await putLocal(payload.state);setRevision(remoteRevision);localStorage.setItem(LAST_REMOTE,payload.cloudUpdatedAt||'');localStorage.setItem(LAST_PUSH,payload.state?.meta?.updatedAt||'');sessionStorage.setItem('chispa-cloud-reloaded','1');location.reload()}
-async function initialConnect(code){if(code.replace(/-/g,'').length<16)throw new Error('weak_code');localStorage.setItem(CODE_KEY,code.trim());setStatus('syncing');const hid=await householdId(code),local=await getLocal(),remote=await api('load',hid);if(remote.exists){await adoptRemote(remote.payload,remote.revision);return}setRevision(0);await saveRemote(hid,local);setStatus('synced')}
-async function cycle(force=false){const code=localStorage.getItem(CODE_KEY);if(!code||busy)return;if(!navigator.onLine){setStatus('offline');return}busy=true;try{const hid=await householdId(code),local=await getLocal(),remote=await api('load',hid);if(!remote.exists){setRevision(0);await saveRemote(hid,local);return}const lastRemote=Date.parse(localStorage.getItem(LAST_REMOTE)||0)||0,lastPush=Date.parse(localStorage.getItem(LAST_PUSH)||0)||0,rStamp=remoteStamp(remote.payload),lStamp=localStamp(local),remoteChanged=remote.revision!==revision()||rStamp>lastRemote+500,localChanged=lStamp>lastPush+500;if(remoteChanged&&localChanged&&!force){setStatus('conflict');return}if(remoteChanged&&!localChanged){await adoptRemote(remote.payload,remote.revision);return}if(localChanged||force){if(remote.revision!==revision()&&!force){setStatus('conflict');return}await saveRemote(hid,local);return}setRevision(remote.revision);localStorage.setItem(LAST_REMOTE,remote.updatedAt||remote.payload.cloudUpdatedAt||'');setStatus('synced',remote.updatedAt||remote.payload.cloudUpdatedAt||'')}catch(e){if(e.code==='revision_conflict')setStatus('conflict');else if(!navigator.onLine)setStatus('offline');else setStatus('error',e.code||'')}finally{busy=false}}
-function statusText(){return tr(labels[syncStatus]||labels.local)}
-function decorate(){const top=document.querySelector('.top>div');if(top&&!document.querySelector('#cloud-pill')){const b=document.createElement('button');b.id='cloud-pill';b.className='cloud-pill';b.onclick=openPanel;top.prepend(b)}const pill=document.querySelector('#cloud-pill');if(pill){pill.dataset.state=syncStatus;pill.textContent=statusText()}const menu=document.querySelector('.menu');if(menu&&!document.querySelector('#cloud-menu')){const b=document.createElement('button');b.id='cloud-menu';b.innerHTML='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-8A6 6 0 0 0 6.2 8.7 4.5 4.5 0 0 0 7 18z"/></svg><span><b>Nube compartida / Shared cloud</b><small>'+statusText()+'</small></span><svg class="ico" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';b.onclick=openPanel;menu.prepend(b)}else if(document.querySelector('#cloud-menu small'))document.querySelector('#cloud-menu small').textContent=statusText()}
-function openPanel(){document.querySelector('#cloud-panel')?.remove();const code=localStorage.getItem(CODE_KEY)||'',wrap=document.createElement('div');wrap.id='cloud-panel';wrap.className='cloud-panel-wrap';wrap.innerHTML=`<button class="cloud-shade" aria-label="Close"></button><section class="cloud-panel"><i></i><span class="kick">CHISPA CLOUD</span><h2>${lang()==='es'?'Lista compartida del hogar':'Shared household list'}</h2><p>${lang()==='es'?'Usen el mismo código en ambos teléfonos. Chispa sigue guardando localmente aunque no haya internet.':'Use the same code on both phones. Chispa keeps saving locally even without internet.'}</p><div class="cloud-state" data-state="${syncStatus}"><b>${statusText()}</b><small>${syncMessage||''}</small></div><label>${lang()==='es'?'Código del hogar':'Household code'}<input id="household-code" value="${code}" autocomplete="off" spellcheck="false" placeholder="ABCDE-FGHIJ-KLMNO-PQRST"></label><div class="cloud-actions"><button class="secondary" id="generate-code">${lang()==='es'?'Generar código':'Generate code'}</button><button class="primary" id="connect-code">${code?(lang()==='es'?'Reconectar / sincronizar':'Reconnect / sync'):(lang()==='es'?'Crear o unirse':'Create or join')}</button></div>${code?`<div class="cloud-actions"><button class="secondary" id="copy-code">${lang()==='es'?'Copiar código':'Copy code'}</button><button class="secondary" id="sync-now">${lang()==='es'?'Sincronizar ahora':'Sync now'}</button><button class="secondary danger-link" id="disconnect-code">${lang()==='es'?'Desconectar nube':'Disconnect cloud'}</button></div>`:''}<p class="cloud-help">${lang()==='es'?'El código funciona como una llave. Compártelo solo con las personas que deben editar esta lista.':'The code acts like a key. Share it only with people who should edit this household.'}</p></section>`;document.body.append(wrap);wrap.querySelector('.cloud-shade').onclick=()=>wrap.remove();wrap.querySelector('#generate-code').onclick=()=>{wrap.querySelector('#household-code').value=generateCode()};wrap.querySelector('#connect-code').onclick=async()=>{const c=wrap.querySelector('#household-code').value.trim();try{await initialConnect(c);wrap.remove();decorate()}catch(e){alert(e.message==='weak_code'?(lang()==='es'?'Usa un código más largo o pulsa Generar código.':'Use a longer code or tap Generate code.'):(lang()==='es'?'No se pudo conectar todavía. Tus datos locales están seguros.':'Could not connect yet. Your local data is safe.'))}};wrap.querySelector('#copy-code')?.addEventListener('click',()=>navigator.clipboard.writeText(code));wrap.querySelector('#sync-now')?.addEventListener('click',async()=>{await cycle(true);wrap.remove()});wrap.querySelector('#disconnect-code')?.addEventListener('click',()=>{if(confirm(lang()==='es'?'¿Desconectar este dispositivo de la nube compartida? Los datos locales se conservan.':'Disconnect this device from shared cloud? Local data stays on this device.')){localStorage.removeItem(CODE_KEY);localStorage.removeItem(LAST_REMOTE);localStorage.removeItem(LAST_PUSH);localStorage.removeItem(REV_KEY);setStatus('local');wrap.remove()}})}
-const observer=new MutationObserver(decorate);observer.observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('online',()=>cycle());window.addEventListener('offline',()=>setStatus('offline'));setTimeout(()=>{decorate();if(localStorage.getItem(CODE_KEY)){cycle();timer=setInterval(()=>cycle(),5000)}},900);
+/* Cloud Sync & Supabase Integration for Chispa
+   Project: botanic-creations (cyxdevcjycmffhmwxojh)
+   Table Prefix: chispa_ ONLY
+*/
+
+const SUPABASE_URL = 'https://cyxdevcjycmffhmwxojh.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_PoqI-3PsCqewtJWJ0Z73Ag_5hIE0oKI';
+
+export async function fetchChispaProjects() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/chispa_projects?select=*`, {
+      headers: {
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+      }
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn('[Supabase Sync Warning]', err);
+    return null;
+  }
+}
+
+export async function fetchFelipeProjectData() {
+  try {
+    const [projectRes, itemsRes, linksRes, budgetRes, stepsRes, checklistRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/chispa_projects?slug=eq.felipe-litter-kit&select=*`, {
+        headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` }
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/chispa_shopping_items?select=*&order=sort_order.asc`, {
+        headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` }
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/chispa_shopping_links?select=*`, {
+        headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` }
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/chispa_budget_options?select=*,chispa_budget_lines(*)&order=sort_order.asc`, {
+        headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` }
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/chispa_protocol_steps?select=*&order=sort_order.asc`, {
+        headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` }
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/chispa_checklist_items?select=*&order=sort_order.asc`, {
+        headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY, 'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` }
+      })
+    ]);
+
+    if (!projectRes.ok) return null;
+
+    const projects = await projectRes.json();
+    if (!projects || projects.length === 0) return null;
+
+    const project = projects[0];
+    const items = itemsRes.ok ? await itemsRes.json() : [];
+    const links = linksRes.ok ? await linksRes.json() : [];
+    const budgetOptions = budgetRes.ok ? await budgetRes.json() : [];
+    const steps = stepsRes.ok ? await stepsRes.json() : [];
+    const checklist = checklistRes.ok ? await checklistRes.json() : [];
+
+    return { project, items, links, budgetOptions, steps, checklist };
+  } catch (err) {
+    console.warn('[Supabase Felipe Fetch Error]', err);
+    return null;
+  }
+}

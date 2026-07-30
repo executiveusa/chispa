@@ -1,0 +1,22 @@
+{
+  "app_name": "Chispa",
+  "version": "2.0.0",
+  "stack": {
+    "frontend": "HTML5, Vanilla ES Modules, CSS3 (Custom Properties), PWA ServiceWorker",
+    "backend": "Supabase Managed Postgres (chispa_ schema)",
+    "hosting": "Vercel"
+  },
+  "routes": [
+    "/home",
+    "/projects",
+    "/projects/felipe-litter-kit",
+    "/shopping",
+    "/tasks",
+    "/notes",
+    "/receipts",
+    "/budgets",
+    "/inventory",
+    "/settings",
+    "/system"
+  ]
+}
