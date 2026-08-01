@@ -1,6 +1,6 @@
-/* Chispa V2 Application Engine
-   Role: Personal operations, bilingual household shopping & interactive projects (Felipe Kit de Arenero).
-   Rules: ZERO emojis in production interface, Apple-level neutral design tokens, exact Felipe seed data fallback.
+/* Chispa V3 Application Engine
+   Inspired by Mobbin iOS Auth & InSleep Atmospheric Design
+   Rules: ZERO emojis, full-page beach hero on Home, Mobbin iOS auth modal, isolated Supabase integration.
 */
 
 import { fetchFelipeProjectData } from './cloud-sync.js';
@@ -12,9 +12,11 @@ const S = {
   subTab: 'items', // items, budgets, protocol, checklist, timeline, notes
   selectedItemId: null,
   activeShareModal: false,
+  activeAuthModal: false,
   shareTokenUrl: null,
   locale: 'es-MX',
   searchQuery: '',
+  userEmail: '',
   
   // Felipe Seed Fallback State
   felipe: {
@@ -193,7 +195,9 @@ function icon(name) {
     settings: `<svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
     share: `<svg class="icon-svg" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`,
     external: `<svg class="icon-svg" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
-    check: `<svg class="icon-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+    check: `<svg class="icon-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+    google: `<svg class="icon-svg" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/></svg>`,
+    apple: `<svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.34c.66-.8 1.11-1.92.99-3.04-.96.04-2.13.64-2.82 1.44-.61.71-1.14 1.86-1 2.97 1.07.08 2.17-.57 2.83-1.37z"/></svg>`
   };
   return icons[name] || '';
 }
@@ -226,6 +230,7 @@ function renderApp() {
         <button class="nav-item ${S.view === 'inventory' ? 'active' : ''}" data-route="inventory">${icon('inventory')} Inventario</button>
         <button class="nav-item ${S.view === 'settings' ? 'active' : ''}" data-route="settings">${icon('settings')} Configuración</button>
       </nav>
+      <button class="btn btn-sm btn-primary" id="btn-open-auth">Iniciar Sesión</button>
     </header>
 
     <main class="app-main">
@@ -234,6 +239,7 @@ function renderApp() {
 
     ${renderItemSideSheet()}
     ${renderShareModal()}
+    ${renderAuthModal()}
 
     <nav class="bottom-bar">
       <button class="bottom-nav-item ${S.view === 'home' ? 'active' : ''}" data-route="home">${icon('home')} <span>Inicio</span></button>
@@ -260,37 +266,37 @@ function renderViewContent() {
   if (S.view === 'inventory') return renderInventoryView();
   if (S.view === 'settings') return renderSettingsView();
   
-  // Default Home
+  // Default Home (Full-Page Serene Beach Hero View)
   return renderHomeView();
 }
 
-// 1. Home View
+// 1. Home View — Serene Full-Page Beach Hero with Minimalist Entry Point
 function renderHomeView() {
   const p = S.felipe;
   const purchasedCount = p.items.filter(i => i.status === 'purchased').length;
   
   return `
-    <img src="./hero-chispa.jpg" alt="Chispa Operaciones Familiares" class="hero-banner">
+    <div class="fullpage-hero-view">
+      <div class="hero-minimal-card">
+        <div class="hero-tag">Operaciones Personales • CDMX</div>
+        <h1 class="hero-headline">Tranquilidad y Organización Familiar.</h1>
+        <p class="hero-description">Gestión de proyectos del hogar, listas de compras sincronizadas en tiempo real y guías de compra preparadas con precisión.</p>
+        
+        <div style="display:flex; gap:12px; font-size:13px; color:var(--text-main); margin-top:4px;" class="tabular-num">
+          <div><strong style="color:var(--accent);">Proyecto Activo:</strong> Kit de arenero para Felipe</div>
+          <div>• ${purchasedCount} de 4 Comprados</div>
+        </div>
 
-    <div class="page-header">
-      <h1 class="page-title">Operaciones Familiares</h1>
-      <p class="page-subtitle">Ciudad de México | Resumen de proyectos y compras activas</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="btn-hero-felipe">Explorar Proyecto Felipe</button>
+          <button class="btn" id="btn-hero-shopping">Ver Listas de Compras</button>
+        </div>
+      </div>
     </div>
 
-    <div class="panel-card" style="cursor:pointer;" id="card-felipe-project">
-      <div class="panel-title">
-        <span>Kit de arenero para Felipe</span>
-        <span class="status-tag critical">Urgente CDMX</span>
-      </div>
-      <p style="font-size:14px; color:var(--muted); margin-bottom:12px;">${p.project.summary}</p>
-      <div style="display:flex; gap:16px; font-size:13px; color:var(--text);" class="tabular-num">
-        <div><strong>Comprado:</strong> ${purchasedCount} de 4 artículos</div>
-        <div><strong>Presupuesto:</strong> $2,750 – $3,500 MXN</div>
-      </div>
-    </div>
-
-    <div class="panel-card">
-      <div class="panel-title">Proyectos Activos</div>
+    <!-- Active Projects Quick Panel -->
+    <div class="glass-card" style="margin-top: 24px;">
+      <div class="panel-title">Proyectos Destacados</div>
       <table class="data-table">
         <thead>
           <tr><th>Proyecto</th><th>Ubicación</th><th>Categoría</th><th>Estado</th></tr>
@@ -300,7 +306,7 @@ function renderHomeView() {
             <td><strong>Kit de arenero para Felipe</strong></td>
             <td>Ciudad de México</td>
             <td>Cuidado de mascotas</td>
-            <td><span class="status-tag warning">En revisión</span></td>
+            <td><span class="status-tag critical">Urgente CDMX</span></td>
           </tr>
         </tbody>
       </table>
@@ -316,7 +322,7 @@ function renderProjectsView() {
       <p class="page-subtitle">Gestión de guías de compra, renovaciones y proyectos del hogar</p>
     </div>
 
-    <div class="panel-card">
+    <div class="glass-card">
       <div class="panel-title">Todos los Proyectos</div>
       <table class="data-table">
         <thead>
@@ -353,19 +359,19 @@ function renderFelipeProjectScreen() {
       </div>
     </div>
 
-    <div class="panel-card" style="background-color: var(--surface-secondary);">
+    <div class="glass-card">
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
         <div>
-          <div style="font-size:12px; color:var(--muted); text-transform:uppercase;">Artículos Comprados</div>
-          <div style="font-size:22px; font-weight:700;" class="tabular-num">${purchasedCount} / 4</div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;">Artículos Comprados</div>
+          <div style="font-size:24px; font-weight:700;" class="tabular-num">${purchasedCount} / 4</div>
         </div>
         <div>
-          <div style="font-size:12px; color:var(--muted); text-transform:uppercase;">Pasos de Protocolo</div>
-          <div style="font-size:22px; font-weight:700;" class="tabular-num">${completedStepsCount} / 5</div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;">Pasos de Protocolo</div>
+          <div style="font-size:24px; font-weight:700;" class="tabular-num">${completedStepsCount} / 5</div>
         </div>
         <div>
-          <div style="font-size:12px; color:var(--muted); text-transform:uppercase;">Rango de Presupuesto</div>
-          <div style="font-size:22px; font-weight:700;" class="tabular-num">$2,750 – $3,500 MXN</div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;">Rango de Presupuesto</div>
+          <div style="font-size:24px; font-weight:700;" class="tabular-num">$2,750 – $3,500 MXN</div>
         </div>
       </div>
     </div>
@@ -388,7 +394,7 @@ function renderFelipeSubTabContent() {
 
   if (S.subTab === 'budgets') {
     return `
-      <div class="panel-card">
+      <div class="glass-card">
         <div class="panel-title">Comparativa de Opciones de Presupuesto</div>
         <div class="data-table-wrapper">
           <table class="data-table">
@@ -412,15 +418,15 @@ function renderFelipeSubTabContent() {
 
   if (S.subTab === 'protocol') {
     return `
-      <div class="panel-card">
+      <div class="glass-card">
         <div class="panel-title">Protocolo de Adaptación e Instalación</div>
         <div style="display:flex; flex-direction:column; gap:16px;">
           ${f.setup_protocol.map((step, idx) => `
-            <div style="display:flex; gap:14px; padding:12px; border-bottom:1px solid var(--line-soft);">
+            <div style="display:flex; gap:14px; padding:12px 0; border-bottom:1px solid var(--line-soft);">
               <div style="font-size:18px; font-weight:700; color:var(--accent);" class="tabular-num">${idx + 1}.</div>
               <div>
                 <strong style="font-size:15px;">${step.title}</strong>
-                <p style="font-size:13.5px; color:var(--muted); margin-top:4px;">${step.body}</p>
+                <p style="font-size:13.5px; color:var(--text-muted); margin-top:4px;">${step.body}</p>
               </div>
             </div>
           `).join('')}
@@ -431,13 +437,13 @@ function renderFelipeSubTabContent() {
 
   if (S.subTab === 'checklist') {
     return `
-      <div class="panel-card">
+      <div class="glass-card">
         <div class="panel-title">Lista de Control Urgente</div>
         <div style="display:flex; flex-direction:column; gap:8px;">
           ${f.checklist.map(c => `
-            <label style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line-soft); cursor:pointer;">
+            <label style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line-soft); cursor:pointer;">
               <input type="checkbox" ${c.status === 'completed' ? 'checked' : ''} data-checklist-id="${c.id}">
-              <span style="font-size:14px; ${c.status === 'completed' ? 'text-decoration:line-through; color:var(--muted);' : ''}">${c.label}</span>
+              <span style="font-size:14px; ${c.status === 'completed' ? 'text-decoration:line-through; color:var(--text-muted);' : ''}">${c.label}</span>
             </label>
           `).join('')}
         </div>
@@ -447,7 +453,7 @@ function renderFelipeSubTabContent() {
 
   if (S.subTab === 'timeline') {
     return `
-      <div class="panel-card">
+      <div class="glass-card">
         <div class="panel-title">Línea de Tiempo de Adaptación</div>
         <div class="data-table-wrapper">
           <table class="data-table">
@@ -470,7 +476,7 @@ function renderFelipeSubTabContent() {
 
   // Default: Primary Items List
   return `
-    <div class="panel-card">
+    <div class="glass-card">
       <div class="panel-title">Lista de Artículos del Kit</div>
       <div class="data-table-wrapper">
         <table class="data-table">
@@ -480,10 +486,10 @@ function renderFelipeSubTabContent() {
           <tbody>
             ${f.items.map(item => `
               <tr class="clickable" data-item-id="${item.id}">
-                <td><span style="font-size:12px; color:var(--muted);">${item.category}</span></td>
+                <td><span style="font-size:12px; color:var(--text-muted);">${item.category}</span></td>
                 <td>
                   <strong>${item.name}</strong>
-                  <div style="font-size:12px; color:var(--muted);">${item.variant}</div>
+                  <div style="font-size:12px; color:var(--text-muted);">${item.variant}</div>
                 </td>
                 <td class="tabular-num">${item.quantity}</td>
                 <td class="tabular-num">${fmtMoney(item.price_min_cents)} – ${fmtMoney(item.price_max_cents)}</td>
@@ -531,32 +537,32 @@ function renderItemSideSheet() {
 
         <div>
           <strong>Variante / Presentación:</strong>
-          <p style="color:var(--muted); font-size:14px; margin-top:2px;">${item.variant}</p>
+          <p style="color:var(--text-muted); font-size:14px; margin-top:2px;">${item.variant}</p>
         </div>
 
         <div>
           <strong>¿Por qué se eligió?</strong>
-          <p style="color:var(--muted); font-size:14px; margin-top:2px;">${item.why}</p>
+          <p style="color:var(--text-muted); font-size:14px; margin-top:2px;">${item.why}</p>
         </div>
 
         ${item.usage ? `
           <div>
             <strong>Modo de empleo:</strong>
-            <p style="color:var(--muted); font-size:14px; margin-top:2px;">${item.usage}</p>
+            <p style="color:var(--text-muted); font-size:14px; margin-top:2px;">${item.usage}</p>
           </div>
         ` : ''}
 
         ${item.specifications ? `
           <div>
             <strong>Especificaciones de la guía original:</strong>
-            <ul style="padding-left:18px; color:var(--muted); font-size:13px; margin-top:4px;">
+            <ul style="padding-left:18px; color:var(--text-muted); font-size:13px; margin-top:4px;">
               ${item.specifications.map(spec => `<li>${spec}</li>`).join('')}
             </ul>
           </div>
         ` : ''}
 
         ${item.verification_warning ? `
-          <div style="background:rgba(138,90,0,0.08); border-left:3px solid var(--warning); padding:10px 12px; border-radius:4px; font-size:13px; color:var(--text);">
+          <div style="background:rgba(255,214,10,0.12); border-left:3px solid var(--warning); padding:10px 12px; border-radius:8px; font-size:13px; color:var(--text-main);">
             <strong>Nota de Verificación:</strong> ${item.verification_warning}
           </div>
         ` : ''}
@@ -592,13 +598,13 @@ function renderShareModal() {
 
   return `
     <div class="sheet-overlay active" style="align-items:center; justify-content:center;">
-      <div style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-l); width:100%; max-width:480px; padding:24px; box-shadow:var(--shadow-overlay);">
+      <div style="background:var(--surface-glass-solid); backdrop-filter:blur(28px); border:1px solid var(--line-glass); border-radius:var(--radius-l); width:100%; max-width:480px; padding:28px; box-shadow:var(--shadow-glass);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
           <h3 style="font-size:18px; font-weight:700;">Compartir Guía Felipe</h3>
           <button class="close-btn" id="btn-close-share">&times;</button>
         </div>
-        <p style="font-size:13.5px; color:var(--muted); margin-bottom:12px;">Genera un enlace de solo lectura seguro para compartir con la familia o compradores en CDMX.</p>
-        <input type="text" readonly value="${shareUrl}" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:var(--radius-s); font-family:var(--font-mono); font-size:12px; margin-bottom:16px;">
+        <p style="font-size:13.5px; color:var(--text-muted); margin-bottom:12px;">Genera un enlace de solo lectura seguro para compartir con la familia o compradores en CDMX.</p>
+        <input type="text" readonly value="${shareUrl}" class="pill-input" style="font-family:var(--font-mono); font-size:12px; margin-bottom:16px;">
         <div style="display:flex; justify-content:flex-end; gap:8px;">
           <button class="btn btn-primary" id="btn-copy-share">Copiar Enlace</button>
         </div>
@@ -607,20 +613,50 @@ function renderShareModal() {
   `;
 }
 
+// Mobbin iOS Auth Modal Component
+function renderAuthModal() {
+  if (!S.activeAuthModal) return '';
+
+  return `
+    <div class="auth-overlay active">
+      <div class="auth-card">
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="close-btn" id="btn-close-auth">&times;</button>
+        </div>
+        <div class="auth-brand-logo">C</div>
+        <h2 class="auth-title">Log in or sign up</h2>
+        
+        <input type="email" placeholder="email@example.com" class="pill-input" id="input-auth-email" value="${S.userEmail}">
+        <button class="btn btn-primary" style="width:100%; min-height:46px;" id="btn-auth-continue">Continue</button>
+
+        <div class="sso-divider">or</div>
+
+        <button class="sso-btn">${icon('google')} Continue with Google</button>
+        <button class="sso-btn">${icon('apple')} Continue with Apple</button>
+      </div>
+    </div>
+  `;
+}
+
 // Placeholder Views
-function renderShoppingView() { return `<div class="page-header"><h1 class="page-title">Compras</h1><p class="page-subtitle">Listas de compras agrupadas por tienda</p></div><div class="panel-card"><p>Listas de compras listas para sincronizar.</p></div>`; }
-function renderTasksView() { return `<div class="page-header"><h1 class="page-title">Tareas</h1></div><div class="panel-card"><p>Tareas del hogar.</p></div>`; }
-function renderNotesView() { return `<div class="page-header"><h1 class="page-title">Notas</h1></div><div class="panel-card"><p>Notas de operación.</p></div>`; }
-function renderReceiptsView() { return `<div class="page-header"><h1 class="page-title">Recibos</h1></div><div class="panel-card"><p>Registro de recibos y comprobantes.</p></div>`; }
-function renderBudgetsView() { return `<div class="page-header"><h1 class="page-title">Presupuestos</h1></div><div class="panel-card"><p>Control de presupuesto mensual.</p></div>`; }
-function renderInventoryView() { return `<div class="page-header"><h1 class="page-title">Inventario</h1></div><div class="panel-card"><p>Inventario del hogar.</p></div>`; }
+function renderShoppingView() { return `<div class="page-header"><h1 class="page-title">Compras</h1><p class="page-subtitle">Listas de compras agrupadas por tienda</p></div><div class="glass-card"><p>Listas de compras listas para sincronizar.</p></div>`; }
+function renderTasksView() { return `<div class="page-header"><h1 class="page-title">Tareas</h1></div><div class="glass-card"><p>Tareas del hogar.</p></div>`; }
+function renderNotesView() { return `<div class="page-header"><h1 class="page-title">Notas</h1></div><div class="glass-card"><p>Notas de operación.</p></div>`; }
+function renderReceiptsView() { return `<div class="page-header"><h1 class="page-title">Recibos</h1></div><div class="glass-card"><p>Registro de recibos y comprobantes.</p></div>`; }
+function renderBudgetsView() { return `<div class="page-header"><h1 class="page-title">Presupuestos</h1></div><div class="glass-card"><p>Control de presupuesto mensual.</p></div>`; }
+function renderInventoryView() { return `<div class="page-header"><h1 class="page-title">Inventario</h1></div><div class="glass-card"><p>Inventario del hogar.</p></div>`; }
 function renderSettingsView() {
   return `
     <div class="page-header"><h1 class="page-title">Configuración</h1></div>
-    <div class="panel-card">
+    <div class="glass-card">
+      <div class="panel-title">Cuenta y Autenticación</div>
+      <p style="font-size:14px; color:var(--text-muted); margin-bottom:12px;">Acceso seguro vía Supabase Auth</p>
+      <button class="btn btn-primary" id="btn-settings-auth">Iniciar Sesión con Apple / Google</button>
+    </div>
+    <div class="glass-card">
       <div class="panel-title">Estado de Conexión Supabase</div>
-      <p style="font-size:14px; color:var(--muted);">Proyecto: <code>botanic-creations (cyxdevcjycmffhmwxojh)</code></p>
-      <p style="font-size:14px; color:var(--muted); margin-top:4px;">Tablas: <code>chispa_*</code> aisladas activas</p>
+      <p style="font-size:14px; color:var(--text-muted);">Proyecto: <code>botanic-creations (cyxdevcjycmffhmwxojh)</code></p>
+      <p style="font-size:14px; color:var(--text-muted); margin-top:4px;">Tablas: <code>chispa_*</code> aisladas activas</p>
     </div>
   `;
 }
@@ -645,11 +681,19 @@ function bindEvents() {
     });
   }
 
-  const felipeCard = document.getElementById('card-felipe-project');
-  if (felipeCard) {
-    felipeCard.addEventListener('click', () => {
+  const heroFelipeBtn = document.getElementById('btn-hero-felipe');
+  if (heroFelipeBtn) {
+    heroFelipeBtn.addEventListener('click', () => {
       S.view = 'projects';
       S.projectSlug = 'felipe-litter-kit';
+      renderApp();
+    });
+  }
+
+  const heroShoppingBtn = document.getElementById('btn-hero-shopping');
+  if (heroShoppingBtn) {
+    heroShoppingBtn.addEventListener('click', () => {
+      S.view = 'shopping';
       renderApp();
     });
   }
@@ -668,6 +712,31 @@ function bindEvents() {
     openFelipeBtn.addEventListener('click', () => {
       S.view = 'projects';
       S.projectSlug = 'felipe-litter-kit';
+      renderApp();
+    });
+  }
+
+  // Auth Modal events
+  const openAuthBtn = document.getElementById('btn-open-auth');
+  if (openAuthBtn) {
+    openAuthBtn.addEventListener('click', () => {
+      S.activeAuthModal = true;
+      renderApp();
+    });
+  }
+
+  const settingsAuthBtn = document.getElementById('btn-settings-auth');
+  if (settingsAuthBtn) {
+    settingsAuthBtn.addEventListener('click', () => {
+      S.activeAuthModal = true;
+      renderApp();
+    });
+  }
+
+  const closeAuthBtn = document.getElementById('btn-close-auth');
+  if (closeAuthBtn) {
+    closeAuthBtn.addEventListener('click', () => {
+      S.activeAuthModal = false;
       renderApp();
     });
   }
@@ -753,7 +822,7 @@ async function init() {
   // Hydrate from Supabase if available
   const cloudData = await fetchFelipeProjectData();
   if (cloudData && cloudData.project) {
-    console.log('[Chispa Engine] Hydrated from Supabase managed cloud.');
+    console.log('[Chispa Engine V3] Hydrated from Supabase managed cloud.');
   }
 }
 
